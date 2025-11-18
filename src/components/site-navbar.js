@@ -33,6 +33,14 @@ class SiteNavbar extends HTMLElement {
               <li class="nav-item">
                 <a class="nav-link" href="/main.html">Home</a>
               </li>
+            
+              <li class="nav-item">
+                <a class="nav-link" href="/saved.html">Saved</a>
+              </li>
+            
+              <li class="nav-item">
+                <a class="nav-link" href="/profile.html">Profile</a>
+              </li>
             </ul>
 
             <div class="d-flex align-items-center gap-2 ms-lg-2" id="rightControls">

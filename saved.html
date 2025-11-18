@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Saved Hikes</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <script type="module" src="/src/components/site-navbar.js"></script>
+    <script type="module" src="/src/components/site-footer.js"></script>
+</head>
+
+<body>
+    <site-navbar></site-navbar>
+
+    <main class="container my-4">
+        <h1>Saved Hikes for <span id="name-goes-here"></span></h1>
+
+        <div class="container">
+            <div id="hikeCardGroup" class="row row-cols-auto"></div>
+        </div>
+
+        <template id="savedCardTemplate">
+            <div class="card py-2 m-2 bg-light" style="width: 16rem;">
+                <img class="card-image card-img-top" src="" alt="Hike image" />
+                <div class="card-body">
+                    <h5 class="card-title">Card title</h5>
+                    <p class="card-text"></p>
+                    <p>Length: <span class="card-length"></span> km</p>
+                    <a class="btn btn-primary read-more" href="#">Read More</a>
+                </div>
+            </div>
+        </template>
+    </main>
+
+    <site-footer></site-footer>
+
+    <!-- JS -->
+    <script type="module" src="/src/app.js"></script>
+    <script type="module" src="/src/saved.js"></script>
+
+</body>
+
+</html>

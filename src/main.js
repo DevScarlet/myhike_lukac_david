@@ -1,28 +1,18 @@
 import { onAuthReady } from "./authentication.js";
 import { db } from "./firebaseConfig.js";
-import { doc, getDoc, onSnapshot, collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, collection, getDocs, addDoc, serverTimestamp, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 
 
 
 function readQuote(day) {
   const quoteDocRef = doc(db, "quotes", day);
 
-  onSnapshot(
-    quoteDocRef,
-    (docSnap) => {
-      if (docSnap.exists()) {
-        const quoteSpan = document.getElementById("quote-goes-here");
-        if (quoteSpan) {
-          quoteSpan.innerHTML = docSnap.data().quote;
-        }
-      } else {
-        console.log("No such quote document!");
-      }
-    },
-    (error) => {
-      console.error("Error listening to quote document: ", error);
+  onSnapshot(quoteDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const quoteSpan = document.getElementById("quote-goes-here");
+      if (quoteSpan) quoteSpan.innerHTML = docSnap.data().quote;
     }
-  );
+  });
 }
 
 
@@ -36,126 +26,82 @@ function showDashboard() {
       return;
     }
 
-    try {
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
+    const userRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userRef);
+    const userData = userDoc.exists() ? userDoc.data() : {};
 
-      const name = userDoc.exists()
-        ? userDoc.data().name
-        : user.displayName || user.email;
+    const name = userData.name || user.displayName || user.email;
+    if (nameElement) nameElement.textContent = `${name}!`;
 
-      if (nameElement) {
-        nameElement.textContent = `${name}!`;
-      }
-    } catch (error) {
-      console.error("Error loading user dashboard data:", error);
-    }
+    const bookmarks = userData.bookmarks || [];
+
+    await displayCardsDynamically(user.uid, bookmarks);
   });
 }
 
 
 
-function addHikeData() {
-  const hikesRef = collection(db, "hikes");
-  console.log("Adding sample hike data...");
-
-  addDoc(hikesRef, {
-    code: "BBY01",
-    name: "Burnaby Lake Park Trail",
-    city: "Burnaby",
-    level: "easy",
-    details: "A lovely place for a lunch walk.",
-    length: 10,
-    hike_time: 60,
-    lat: 49.2467097082573,
-    lng: -122.9187029619698,
-    last_updated: serverTimestamp(),
-  });
-
-  addDoc(hikesRef, {
-    code: "AM01",
-    name: "Buntzen Lake Trail",
-    city: "Anmore",
-    level: "moderate",
-    details: "Close to town, and relaxing.",
-    length: 10.5,
-    hike_time: 80,
-    lat: 49.3399431028579,
-    lng: -122.85908496766939,
-    last_updated: serverTimestamp(),
-  });
-
-  addDoc(hikesRef, {
-    code: "NV01",
-    name: "Mount Seymour Trail",
-    city: "North Vancouver",
-    level: "hard",
-    details: "Amazing ski slope views.",
-    length: 8.2,
-    hike_time: 120,
-    lat: 49.38847101455571,
-    lng: -122.94092543551031,
-    last_updated: serverTimestamp(),
-  });
-}
-
-
-
-async function displayCardsDynamically() {
-  const cardTemplate = document.getElementById("hikeCardTemplate");
-  const container = document.getElementById("hikes-go-here");
-  if (!cardTemplate || !container) {
-    console.warn("Hike card template or container not found in DOM.");
-    return;
-  }
-
+async function displayCardsDynamically(userId, bookmarks) {
+  let cardTemplate = document.getElementById("hikeCardTemplate");
   const hikesCollectionRef = collection(db, "hikes");
 
-  try {
-    const querySnapshot = await getDocs(hikesCollectionRef);
+  const querySnapshot = await getDocs(hikesCollectionRef);
 
-    container.innerHTML = "";
+  document.getElementById("hikes-go-here").innerHTML = "";
 
-    querySnapshot.forEach((docSnap) => {
-      const hike = docSnap.data();
-      const hikeId = docSnap.id;
+  querySnapshot.forEach((docSnap) => {
+    let newcard = cardTemplate.content.cloneNode(true);
+    const hike = docSnap.data();
+    const hikeId = docSnap.id;
 
-      const newCard = cardTemplate.content.cloneNode(true);
+    newcard.querySelector(".card-title").textContent = hike.name;
+    newcard.querySelector(".card-text").textContent =
+      hike.details || `Located in ${hike.city}.`;
+    newcard.querySelector(".card-length").textContent = hike.length;
 
-      newCard.querySelector(".card-title").textContent = hike.name;
-      newCard.querySelector(".card-text").textContent =
-        hike.details || `Located in ${hike.city}.`;
-      newCard.querySelector(".card-length").textContent = hike.length;
+    if (newcard.querySelector(".card-image"))
+      newcard.querySelector(".card-image").src = `./images/${hike.code}.jpg`;
 
-      const detailsBtn = newCard.querySelector(".get-details-btn");
-      if (detailsBtn) {
-        detailsBtn.addEventListener("click", () => {
-          window.location.href = `eachHike.html?docID=${hikeId}`;
-        });
-      }
+    const detailsBtn = newcard.querySelector(".get-details-btn");
+    if (detailsBtn) {
+      detailsBtn.addEventListener("click", () => {
+        window.location.href = `eachHike.html?docID=${hikeId}`;
+      });
+    }
 
-      container.appendChild(newCard);
-    });
-  } catch (error) {
-    console.error("Error getting hikes documents: ", error);
-  }
+    const icon = newcard.querySelector(".bookmark-icon");
+    icon.id = "save-" + hikeId;
+
+    const isBookmarked = bookmarks.includes(hikeId);
+    icon.innerText = isBookmarked ? "bookmark" : "bookmark_border";
+
+    icon.onclick = () => toggleBookmark(userId, hikeId);
+
+    document.getElementById("hikes-go-here").appendChild(newcard);
+  });
 }
 
 
 
-async function seedHikes() {
-  const hikesRef = collection(db, "hikes");
+async function toggleBookmark(userId, hikeDocID) {
+  const userRef = doc(db, "users", userId);
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.data() || {};
+  const bookmarks = userData.bookmarks || [];
+
+  const icon = document.getElementById("save-" + hikeDocID);
+  const isBookmarked = bookmarks.includes(hikeDocID);
 
   try {
-    const querySnapshot = await getDocs(hikesRef);
-    if (querySnapshot.empty) {
-      console.log("Hikes collection is empty. Seeding data...");
-      addHikeData();
+    if (isBookmarked) {
+      await updateDoc(userRef, { bookmarks: arrayRemove(hikeDocID) });
+      icon.innerText = "bookmark_border";
     } else {
-      console.log("Hikes collection already contains data. Skipping seed.");
+      await updateDoc(userRef, { bookmarks: arrayUnion(hikeDocID) });
+      icon.innerText = "bookmark";
     }
-  } catch (error) {
-    console.error("Error checking hikes collection: ", error);
+  } catch (e) {
+    console.error("Error toggling bookmark:", e);
   }
 }
 
@@ -163,5 +109,3 @@ async function seedHikes() {
 
 readQuote("tuesday");
 showDashboard();
-displayCardsDynamically();
-seedHikes();
