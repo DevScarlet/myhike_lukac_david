@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Hike Details</title>
+    <meta name="comp1800 template" content="My 1800 App">
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <script type="module" src="/src/components/site-navbar.js"></script>
+    <script type="module" src="/src/components/site-footer.js"></script>
+</head>
+
+<body>
+    <site-navbar></site-navbar>
+
+    <main class="container py-4">
+        <h1 id="hikeName">Loading...</h1>
+
+        <img id="hikeImage" class="img-fluid rounded mt-3 d-block mx-auto" src="/images/image.jpg" alt="Hike image">
+
+        <div class="text-center mt-3">
+            <button id="writeReviewBtn" class="btn btn-primary">
+                Write Review
+            </button>
+        </div>
+    </main>
+
+    <div class="container my-4">
+        <h2>Reviews:</h2>
+        <div id="details-go-here"></div>
+        <div class="card-container">
+            <div id="reviewCardGroup" class="row row-cols-auto">
+            </div>
+        </div>
+    </div>
+
+    <template id="reviewCardTemplate">
+        <div class="card bg-secondary m-2" style="min-width: 260px;">
+            <div class="card-body bg-light">
+                <h5 class="title">placeholder</h5>
+                <p class="star-rating"></p>
+                <p class="time">placeholder</p>
+                <p class="level">placeholder</p>
+                <p class="season">placeholder</p>
+                <p class="scrambled">placeholder</p>
+                <p class="flooded">placeholder</p>
+                <br>
+                <p class="description">
+                    This card has supporting text below as a natural lead-in to additional content.
+                </p>
+            </div>
+        </div>
+    </template>
+
+    <site-footer></site-footer>
+
+    <script type="module" src="/src/app.js"></script>
+    <script type="module" src="/src/eachHike.js"></script>
+</body>
+
+</html>
